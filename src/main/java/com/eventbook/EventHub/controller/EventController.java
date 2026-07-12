@@ -1,12 +1,10 @@
 package com.eventbook.EventHub.controller;
 
-import com.eventbook.EventHub.DTOs.CreateEventRequestDto;
-import com.eventbook.EventHub.DTOs.CreateEventResponseDto;
-import com.eventbook.EventHub.DTOs.GetEventDetailsResponseDto;
-import com.eventbook.EventHub.DTOs.ListEventResponseDto;
-import com.eventbook.EventHub.entity.Event;
+import com.eventbook.EventHub.domain.DTOs.*;
+import com.eventbook.EventHub.domain.entity.Event;
+import com.eventbook.EventHub.domain.models.UpdateEventRequest;
 import com.eventbook.EventHub.mappers.EventMapper;
-import com.eventbook.EventHub.models.CreateEventRequest;
+import com.eventbook.EventHub.domain.models.CreateEventRequest;
 import com.eventbook.EventHub.services.EventService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +18,8 @@ import org.springframework.web.bind.annotation.*;
 
 
 import java.util.UUID;
+
+import static com.eventbook.EventHub.util.JwtUtil.parseUserId;
 
 @RestController
 @RequestMapping(path = "/api/v1/events")
@@ -40,6 +40,21 @@ public class EventController {
         Event createdEvent = eventService.createdEvent(userId,createEventRequest);
         CreateEventResponseDto createEventResponseDto= eventMapper.toDto(createdEvent);
         return new ResponseEntity<>(createEventResponseDto, HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{eventId}")
+    public ResponseEntity<UpdateEventResponseDto> updateEvent(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID eventId,
+            @Valid @RequestBody UpdateEventRequestDto updateEventRequestDto)
+    {
+        UpdateEventRequest updateEventRequest= eventMapper.fromDto(updateEventRequestDto);
+        UUID userId = parseUserId(jwt);
+
+        Event updatedEvent = eventService.updateEventForOrganizer(userId,eventId,updateEventRequest);
+
+        UpdateEventResponseDto updateEventResponseDto= eventMapper.toUpdateEventResponseDto(updatedEvent);
+        return ResponseEntity.ok(updateEventResponseDto);
     }
 
 
@@ -66,9 +81,16 @@ public class EventController {
                     .orElse(ResponseEntity.notFound().build());
     }
 
-    private UUID parseUserId(Jwt jwt){
-        return UUID.fromString(jwt.getSubject());
+
+    @DeleteMapping("/{eventId}")
+    public ResponseEntity<Void> deleteEvent(@AuthenticationPrincipal
+                                            Jwt jwt, @PathVariable UUID eventId) {
+        UUID userId = parseUserId(jwt);
+        eventService.deleteEventForOrganizer(userId,eventId);
+        return ResponseEntity.noContent().build();
     }
+
+
 
 
 }

@@ -1,7 +1,7 @@
 package com.eventbook.EventHub.filters;
 
 
-import com.eventbook.EventHub.entity.User;
+import com.eventbook.EventHub.domain.entity.User;
 import com.eventbook.EventHub.repositories.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

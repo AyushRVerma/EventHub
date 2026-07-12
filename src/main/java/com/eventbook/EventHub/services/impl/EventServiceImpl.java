@@ -1,21 +1,28 @@
 package com.eventbook.EventHub.services.impl;
 
-import com.eventbook.EventHub.models.CreateEventRequest;
-import com.eventbook.EventHub.entity.Event;
-import com.eventbook.EventHub.entity.TicketType;
-import com.eventbook.EventHub.entity.User;
+import com.eventbook.EventHub.domain.entity.EventStatusEnum;
+import com.eventbook.EventHub.domain.models.CreateEventRequest;
+import com.eventbook.EventHub.domain.entity.Event;
+import com.eventbook.EventHub.domain.entity.TicketType;
+import com.eventbook.EventHub.domain.entity.User;
+import com.eventbook.EventHub.domain.models.UpdateEventRequest;
+import com.eventbook.EventHub.domain.models.UpdateTicketTypeRequest;
+import com.eventbook.EventHub.exceptions.EventNotFoundException;
+import com.eventbook.EventHub.exceptions.EventUpdateException;
+import com.eventbook.EventHub.exceptions.TicketTypeNotFoundException;
 import com.eventbook.EventHub.exceptions.UserNotFoundException;
 import com.eventbook.EventHub.repositories.EventRepository;
 import com.eventbook.EventHub.repositories.UserRepository;
 import com.eventbook.EventHub.services.EventService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -68,4 +75,98 @@ public class EventServiceImpl implements EventService {
     public Optional<Event> getEventForOrganizer(UUID organizerId, UUID id) {
         return eventRepository.findByIdAndOrganizerId(id, organizerId);
     }
+
+    @Override
+    @Transactional
+    public Event updateEventForOrganizer(UUID organizerId, UUID id, UpdateEventRequest event) {
+        if(event.getId()==null){
+            throw new EventUpdateException("Event Id cannot be null");
+        }
+
+        if(!id.equals(event.getId())){
+            throw new EventUpdateException("Provided id does not match");
+
+        }
+
+        Event existingEvent = eventRepository.findByIdAndOrganizerId(id, organizerId)
+        .orElseThrow(() -> new EventNotFoundException(
+                String.format("Event with id %s not found", id)));
+
+        existingEvent.setName(event.getName());
+        existingEvent.setStart(event.getStart());
+        existingEvent.setEnd(event.getEnd());
+        existingEvent.setVenue(event.getVenue());
+        existingEvent.setSalesStart(event.getSalesStart());
+        existingEvent.setSalesEnd(event.getSalesEnd());
+        existingEvent.setStatus(event.getStatus());
+
+
+        Set<UUID> requestTicketTypeIds= event.getTicketTypes()
+                .stream()
+                .map(UpdateTicketTypeRequest::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+
+        existingEvent.getTicketTypes().removeIf(
+                existingTicketType -> !requestTicketTypeIds
+                                                .contains(existingTicketType.getId()));
+
+        Map<UUID, TicketType> existingTicketTypesIndex=existingEvent.getTicketTypes().stream()
+                .collect(Collectors.toMap(TicketType::getId, Function.identity()));
+
+        for(UpdateTicketTypeRequest ticketType :  event.getTicketTypes()){
+            if(ticketType.getId()==null){
+                 //create
+                TicketType ticketTypeToCreate = new TicketType();
+                ticketTypeToCreate.setName(ticketType.getName());
+                ticketTypeToCreate.setPrice(ticketType.getPrice());
+                ticketTypeToCreate.setDescription(ticketType.getDescription());
+                ticketTypeToCreate.setTotalAvailable(ticketType.getTotalAvailable());
+                existingEvent.getTicketTypes().add(ticketTypeToCreate);
+
+            }
+            else if(existingTicketTypesIndex.containsKey(ticketType.getId())){
+                 //update
+                 TicketType existingTicketType = existingTicketTypesIndex.get(ticketType.getId());
+
+                 existingTicketType.setName(ticketType.getName());
+                 existingTicketType.setPrice(ticketType.getPrice());
+                 existingTicketType.setDescription(ticketType.getDescription());
+                 existingTicketType.setTotalAvailable(ticketType.getTotalAvailable());
+
+            }
+
+            else{
+                throw new TicketTypeNotFoundException(String.format("Ticket Type with id %s not found", ticketType.getId()));
+            }
+
+
+        }
+
+        return eventRepository.save(existingEvent);
+    }
+
+    @Override
+    @Transactional
+    public void deleteEventForOrganizer(UUID organizerId, UUID id) {
+        getEventForOrganizer(organizerId, id).ifPresent(eventRepository::delete);
+    }
+
+    @Override
+    public Page<Event> listPublishedEvents(Pageable pageable) {
+        return eventRepository.findByStatus(EventStatusEnum.PUBLISHED, pageable);
+    }
+
+    @Override
+    public Page<Event> searchPublishedEvents(String query, Pageable pageable) {
+          return eventRepository.searchEvents(query, pageable);
+    }
+
+    @Override
+    public Optional<Event> getPublishedEvents(UUID id) {
+       return eventRepository.findByIdAndStatus(id, EventStatusEnum.PUBLISHED);
+    }
+
+
 }

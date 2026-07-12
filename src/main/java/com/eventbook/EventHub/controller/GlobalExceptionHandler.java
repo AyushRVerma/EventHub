@@ -1,8 +1,7 @@
 package com.eventbook.EventHub.controller;
 
-import com.eventbook.EventHub.DTOs.CreateEventResponseDto;
-import com.eventbook.EventHub.DTOs.ErrorDto;
-import com.eventbook.EventHub.exceptions.UserNotFoundException;
+import com.eventbook.EventHub.domain.DTOs.ErrorDto;
+import com.eventbook.EventHub.exceptions.*;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,10 +20,73 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
 
-     @ExceptionHandler(UserNotFoundException.class)
+
+
+    @ExceptionHandler(TicketSoldOutException.class)
+    public ResponseEntity<ErrorDto> handleTicketSoldOutException(
+            TicketSoldOutException ex){
+        log.error("Event TicketSoldOutException", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("No ticket available");
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler(QrCodeNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleQrCodeNotFoundException(
+            QrCodeNotFoundException ex){
+        log.error("Event QrCodeNotFoundException", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("Unable to find QR Code");
+        return new ResponseEntity<>(errorDto, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    @ExceptionHandler(QrCodeGenerationException.class)
+    public ResponseEntity<ErrorDto> handleQrCodeGenerationException(
+            QrCodeGenerationException ex){
+        log.error("Event QrCodeGenerationException", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("Unable to genrate QR Code");
+        return new ResponseEntity<>(errorDto, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(EventUpdateException.class)
+    public ResponseEntity<ErrorDto> handleEventUpdateException(
+            EventUpdateException ex){
+        log.error("Event Update exception", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("Unable to update event");
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
+     @ExceptionHandler(EventNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleEventNotFoundException(
+            EventNotFoundException ex){
+        log.error("EventNotFound exception", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("Event not found");
+        return new ResponseEntity<>(errorDto, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(TicketTypeNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleTicketTypeNotFoundException(
+            TicketTypeNotFoundException ex){
+        log.error("TicketTypeNotFound exception", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("TicketType not found");
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TicketNotFoundException.class)
+    public ResponseEntity<ErrorDto> handleTicketNotFoundException(
+            TicketNotFoundException ex){
+        log.error("TicketNotFound exception", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError("Ticket not found");
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorDto> handleUserNotFoundException(
-            UsernameNotFoundException ex){
-        log.error("Caught exception", ex);
+            UserNotFoundException ex){
+        log.error("UserNotFound exception", ex);
         ErrorDto errorDto = new ErrorDto();
         errorDto.setError("User not found");
         return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
@@ -59,7 +121,7 @@ public class GlobalExceptionHandler {
         String errorMessage= ex.getConstraintViolations()
                 .stream()
                 .findFirst()
-                .map(violation -> violation.getPropertyPath()
+                     .map(violation -> violation.getPropertyPath()
                 +": "+violation.getMessage()
         ).orElse("Constraint violation occured");
 
