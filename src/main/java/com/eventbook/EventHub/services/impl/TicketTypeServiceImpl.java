@@ -35,6 +35,8 @@ public class TicketTypeServiceImpl implements TicketTypeService {
        TicketType ticketType= ticketTypeRepository.findById(ticketTypeId).orElseThrow(() -> new
                TicketTypeNotFoundException(String.format("Ticket type with id %s not found", ticketTypeId)));
 
+
+
        int purchasedTickets = ticketRepository.countByTicketTypeId(ticketType.getId());
        Integer totalAvailable = ticketType.getTotalAvailable();
 

@@ -16,21 +16,27 @@ import java.util.UUID;
 public interface EventRepository extends JpaRepository<Event, UUID> {
 
     Page<Event> findByOrganizerId(UUID organizerId, Pageable pageable);
-    Optional<Event> findByIdAndOrganizerId(UUID id, UUID organizerId);
+    Optional<Event>     findByIdAndOrganizerId(UUID id, UUID organizerId);
     Page<Event> findByStatus(EventStatusEnum status, Pageable pageable);
 
-    @Query(value= "SELECT * FROM events WHERE " +
-     "status = 'PUBLISHED' AND " +
-     "to_tsvector('english' , COALESCE(name, '') || ' ' || COALESCE(venue,''))" +
-     "@@ plainto_tsquery('english', :searchTerm)",
+//    @Query(value= "SELECT * FROM events WHERE " +
+//     "status = 'PUBLISHED' AND " +
+//     "to_tsvector('english' , COALESCE(name, '') || ' ' || COALESCE(venue,''))" +
+//     "@@ plainto_tsquery('english', :searchTerm)",
+//
+//     countQuery = "SELECT count(*) FROM events WHERE " +
+//      "status = 'PUBLISHED' AND " +
+//     "to_tsvector('english', COALESCE(name,'') || ' ' || COALESCE(venue,'')) " +
+//     "@@ plainto_tsquery('english', :searchTerm)" ,
+//
+//     nativeQuery = true)
+//    Page<Event> searchEvents(@Param("searchTerm")String searchTerm, Pageable pageable);
 
-     countQuery = "SELECT count(*) FROM events WHERE " +
-      "status = 'PUBLISHED' AND " +
-     "to_tsvector('english', COALESCE(name,'') || ' ' || COALESCE(venue,'')) " +
-     "@@ plainto_tsquery('english', :searchTerm)" ,
-
-     nativeQuery = true)
-    Page<Event> searchEvents(@Param("searchTerm")String searchTerm, Pageable pageable);
+    @Query("SELECT e FROM Event e WHERE " +
+            "e.status = com.eventbook.EventHub.domain.entity.EventStatusEnum.PUBLISHED AND " +
+            "(LOWER(e.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(e.venue) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<Event> searchEvents(@Param("searchTerm") String searchTerm, Pageable pageable);
 
     Optional<Event> findByIdAndStatus(UUID id, EventStatusEnum status);
 

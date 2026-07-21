@@ -56,6 +56,25 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
     }
 
+
+    @ExceptionHandler(InvalidEventDatesException.class)
+    public ResponseEntity<ErrorDto> invalidEventDatesException (
+            InvalidEventDatesException ex){
+        log.error("Invalid Event Dates", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError(ex.getMessage());
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(OrganizerCannotPurchaseTicketException.class)
+    public ResponseEntity<ErrorDto> organizerCannotPurchaseTicketException (
+            OrganizerCannotPurchaseTicketException ex){
+        log.error("Only Attendee Can Purchase", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError(ex.getMessage());
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
      @ExceptionHandler(EventNotFoundException.class)
     public ResponseEntity<ErrorDto> handleEventNotFoundException(
             EventNotFoundException ex){

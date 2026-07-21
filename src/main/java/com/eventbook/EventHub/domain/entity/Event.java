@@ -64,6 +64,7 @@ public class Event {
     @OneToMany(mappedBy = "event",cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TicketType> ticketTypes=new ArrayList<>();
 
+
     @CreatedDate
     @Column(name="created_at",updatable = false, nullable = false)
     private LocalDateTime createdAt;
@@ -71,6 +72,8 @@ public class Event {
     @LastModifiedDate
     @Column(name="updated_at",nullable = false)
     private LocalDateTime updatedAt;
+
+
 
     @Override
     public boolean equals(Object o) {

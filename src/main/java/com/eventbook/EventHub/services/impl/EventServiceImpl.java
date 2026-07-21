@@ -7,10 +7,7 @@ import com.eventbook.EventHub.domain.entity.TicketType;
 import com.eventbook.EventHub.domain.entity.User;
 import com.eventbook.EventHub.domain.models.UpdateEventRequest;
 import com.eventbook.EventHub.domain.models.UpdateTicketTypeRequest;
-import com.eventbook.EventHub.exceptions.EventNotFoundException;
-import com.eventbook.EventHub.exceptions.EventUpdateException;
-import com.eventbook.EventHub.exceptions.TicketTypeNotFoundException;
-import com.eventbook.EventHub.exceptions.UserNotFoundException;
+import com.eventbook.EventHub.exceptions.*;
 import com.eventbook.EventHub.repositories.EventRepository;
 import com.eventbook.EventHub.repositories.UserRepository;
 import com.eventbook.EventHub.services.EventService;
@@ -37,6 +34,25 @@ public class EventServiceImpl implements EventService {
                .orElseThrow(() -> new UserNotFoundException(
                        String.format("User with id %s not found", organizerId))
                );
+
+        if(event.getStart()!=null && event.getEnd()!=null){
+            if(event.getStart().isAfter(event.getEnd())){
+                throw new InvalidEventDatesException("Event end date must be after the start date");
+            }
+        }
+
+        if(event.getSalesStart()!=null && event.getSalesEnd()!=null){
+            if(event.getSalesEnd().isAfter(event.getSalesEnd())){
+                throw new InvalidEventDatesException("Event sales end date must be after the Event sales start date");
+            }
+        }
+
+        if(event.getSalesStart()!=null && event.getSalesEnd()!=null && event.getStart()!=null && event.getEnd()!=null){
+            if(event.getSalesStart().isAfter(event.getStart()) && event.getSalesEnd().isAfter(event.getStart())){
+                throw new InvalidEventDatesException("Event start date must be after the Event sales duration date");
+            }
+        }
+
 
         Event eventToCreate = new Event();
 
@@ -88,6 +104,24 @@ public class EventServiceImpl implements EventService {
 
         }
 
+        if(event.getStart()!=null && event.getEnd()!=null){
+            if(event.getStart().isAfter(event.getEnd())){
+                throw new InvalidEventDatesException("Event end date must be after the start date");
+            }
+        }
+
+        if(event.getSalesStart()!=null && event.getSalesEnd()!=null){
+            if(event.getSalesEnd().isAfter(event.getSalesEnd())){
+                throw new InvalidEventDatesException("Event sales end date must be after the Event sales start date");
+            }
+        }
+
+        if(event.getSalesStart()!=null && event.getSalesEnd()!=null && event.getStart()!=null && event.getEnd()!=null){
+            if(event.getSalesStart().isAfter(event.getStart()) && event.getSalesEnd().isAfter(event.getStart())){
+                throw new InvalidEventDatesException("Event start date must be after the Event sales duration date");
+            }
+        }
+
         Event existingEvent = eventRepository.findByIdAndOrganizerId(id, organizerId)
         .orElseThrow(() -> new EventNotFoundException(
                 String.format("Event with id %s not found", id)));
@@ -123,6 +157,7 @@ public class EventServiceImpl implements EventService {
                 ticketTypeToCreate.setPrice(ticketType.getPrice());
                 ticketTypeToCreate.setDescription(ticketType.getDescription());
                 ticketTypeToCreate.setTotalAvailable(ticketType.getTotalAvailable());
+                ticketTypeToCreate.setEvent(existingEvent);
                 existingEvent.getTicketTypes().add(ticketTypeToCreate);
 
             }
