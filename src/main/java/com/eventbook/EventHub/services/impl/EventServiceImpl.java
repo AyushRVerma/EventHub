@@ -1,5 +1,8 @@
 package com.eventbook.EventHub.services.impl;
 
+import com.eventbook.EventHub.domain.DTOs.GetEventDetailsResponseDto;
+import com.eventbook.EventHub.domain.DTOs.GetPublishedEventDetailsResponseDto;
+import com.eventbook.EventHub.domain.DTOs.ListPublishedEventResponseDto;
 import com.eventbook.EventHub.domain.entity.EventStatusEnum;
 import com.eventbook.EventHub.domain.models.CreateEventRequest;
 import com.eventbook.EventHub.domain.entity.Event;
@@ -8,11 +11,14 @@ import com.eventbook.EventHub.domain.entity.User;
 import com.eventbook.EventHub.domain.models.UpdateEventRequest;
 import com.eventbook.EventHub.domain.models.UpdateTicketTypeRequest;
 import com.eventbook.EventHub.exceptions.*;
+import com.eventbook.EventHub.mappers.EventMapper;
 import com.eventbook.EventHub.repositories.EventRepository;
 import com.eventbook.EventHub.repositories.UserRepository;
 import com.eventbook.EventHub.services.EventService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,8 +33,10 @@ public class EventServiceImpl implements EventService {
 
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
+    private final EventMapper  eventMapper;
 
     @Override
+    @CacheEvict(value = {"published_events", "published_event_details"}, allEntries=true)
     public Event createdEvent(UUID organizerId, CreateEventRequest event) {
        User organizer= userRepository.findById(organizerId)
                .orElseThrow(() -> new UserNotFoundException(
@@ -94,6 +102,7 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"published_events", "published_event_details"}, allEntries=true)
     public Event updateEventForOrganizer(UUID organizerId, UUID id, UpdateEventRequest event) {
         if(event.getId()==null){
             throw new EventUpdateException("Event Id cannot be null");
@@ -184,23 +193,29 @@ public class EventServiceImpl implements EventService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"published_events", "published_event_details"}, allEntries = true)
     public void deleteEventForOrganizer(UUID organizerId, UUID id) {
         getEventForOrganizer(organizerId, id).ifPresent(eventRepository::delete);
     }
 
     @Override
-    public Page<Event> listPublishedEvents(Pageable pageable) {
-        return eventRepository.findByStatus(EventStatusEnum.PUBLISHED, pageable);
+//    @Cacheable(value="published_events", key="#pageable.pageNumber + '-' + #pageable.pageSize")
+    public Page<ListPublishedEventResponseDto> listPublishedEvents(Pageable pageable) {
+        Page<Event> events= eventRepository.findByStatus(EventStatusEnum.PUBLISHED, pageable);
+       return events.map(eventMapper::toListPublishedEventResponseDto);
     }
 
     @Override
-    public Page<Event> searchPublishedEvents(String query, Pageable pageable) {
-          return eventRepository.searchEvents(query, pageable);
+    public Page<ListPublishedEventResponseDto> searchPublishedEvents(String query, Pageable pageable) {
+          return eventRepository.searchEvents(query, pageable)
+                  .map(eventMapper::toListPublishedEventResponseDto);
     }
 
     @Override
-    public Optional<Event> getPublishedEvents(UUID id) {
-       return eventRepository.findByIdAndStatus(id, EventStatusEnum.PUBLISHED);
+    @Cacheable(value = "published_event_details", key = "#id")
+    public Optional<GetPublishedEventDetailsResponseDto> getPublishedEvents(UUID id) {
+       return eventRepository.findByIdAndStatus(id, EventStatusEnum.PUBLISHED)
+               .map(eventMapper::toGetPublishedEventDetailsResponseDto);
     }
 
 

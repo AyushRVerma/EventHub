@@ -11,6 +11,13 @@ services:
     environment:
       POSTGRES_PASSWORD: ayush
 
+
+  redis:
+    image: redis:7-alpine
+    container_name: eventhub-redis
+    ports:
+      - "6379:6379"
+
   #Database management interface
   adminer:
     image: adminer:latest

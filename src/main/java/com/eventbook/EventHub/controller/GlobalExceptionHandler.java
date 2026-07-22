@@ -151,7 +151,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleException(Exception ex) {
-        log.error("Caught exception", ex);
+        log.error("Caught handle exception", ex);
         ErrorDto errorDto = new ErrorDto();
         errorDto.setError("An unknown error occured");
 

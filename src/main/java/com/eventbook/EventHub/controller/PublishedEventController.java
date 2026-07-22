@@ -26,9 +26,9 @@ public class PublishedEventController {
 
     @GetMapping
     public ResponseEntity<Page<ListPublishedEventResponseDto>> listPublishedEvents(
-            @RequestParam(required = false) String q, Pageable pageable) {
+            @RequestParam(required = false) String q, @org.springdoc.core.annotations.ParameterObject Pageable pageable) {
 
-        Page<Event> events;
+        Page<ListPublishedEventResponseDto> events;
         if(null!=q && !q.trim().isEmpty()){
             events =  eventService.searchPublishedEvents(q, pageable);
         }
@@ -37,7 +37,7 @@ public class PublishedEventController {
             events= eventService.listPublishedEvents(pageable);
         }
 
-        return ResponseEntity.ok(events.map(eventMapper::toListPublishedEventResponseDto));
+        return ResponseEntity.ok(events);
 //        return ResponseEntity.ok(eventService.listPublishedEvents(pageable)
 //                .map(eventMapper::toListPublishedEventResponseDto));
     }
@@ -47,7 +47,6 @@ public class PublishedEventController {
             @PathVariable UUID eventId
     ){
       return  eventService.getPublishedEvents(eventId)
-                .map(eventMapper::toGetPublishedEventDetailsResponseDto)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
