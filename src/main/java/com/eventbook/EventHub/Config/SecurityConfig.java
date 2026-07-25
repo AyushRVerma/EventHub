@@ -1,5 +1,6 @@
 package com.eventbook.EventHub.Config;
 
+import com.eventbook.EventHub.filters.RateLimiterFilter;
 import com.eventbook.EventHub.filters.UserProvisioningFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +22,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(
-            HttpSecurity http, UserProvisioningFilter userProvisioningFilter , JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
+            HttpSecurity http, UserProvisioningFilter userProvisioningFilter , JwtAuthenticationConverter jwtAuthenticationConverter , RateLimiterFilter
+             rateLimiterFilter) throws Exception {
 
         http
                 .cors(Customizer.withDefaults())
@@ -43,7 +45,8 @@ public class SecurityConfig {
 //                                Customizer.withDefaults()
                                 jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)
                         ))
-                .addFilterAfter(userProvisioningFilter, BearerTokenAuthenticationFilter.class);
+                .addFilterAfter(userProvisioningFilter, BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(rateLimiterFilter,UserProvisioningFilter.class);
 
         return http.build();
 

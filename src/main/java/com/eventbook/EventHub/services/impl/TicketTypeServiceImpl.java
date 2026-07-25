@@ -28,7 +28,7 @@ public class TicketTypeServiceImpl implements TicketTypeService {
 
     @Override
     @Transactional
-    public Ticket purchaseTicket(UUID userId, UUID ticketTypeId) {
+    public Ticket purchaseTicket(UUID userId, UUID ticketTypeId, UUID eventId) {
        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(
                String.format("User with id %s not found", userId))
        );
