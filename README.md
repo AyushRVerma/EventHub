@@ -1,292 +1,107 @@
-# EventHub
+Example validation request:
 
-<p align="center">
-  <h3 align="center">A Scalable Event Management & Digital Ticketing Backend</h3>
-  <p align="center">
-    Built with Java, Spring Boot, Spring Security, PostgreSQL, and Docker.
-  </p>
-</p>
-
----
-
-## Overview
-
-EventHub is a production-inspired backend application for event management and digital ticketing. It enables organizers to create and manage events, configure multiple ticket types, generate secure QR-code tickets, and validate attendees through a dedicated ticket validation API.
-
-The project follows a layered architecture with a clean separation of concerns, making it scalable, maintainable, and easy to extend.
-
----
-
-## Features
-
-### Event Management
-
-- Create, update, retrieve, and manage events
-- Draft and publish workflow for events
-- Publish only completed events
-- Event lifecycle management through REST APIs
-
-### Ticket Management
-
-- Multiple ticket categories (VIP, General, Early Bird, etc.)
-- Configurable pricing
-- Ticket inventory management
-- Capacity validation
-- Sold-out protection with custom exception handling
-
-### Authentication & Security
-
-- JWT-based authentication
-- Spring Security authorization
-- Secure REST APIs
-- User provisioning and authentication filters
-- Role-based access control
-
-### QR Code Management
-
-- Unique QR code generation for every ticket
-- QR code linked to ticket information
-- Secure ticket identification
-
-### Ticket Validation
-
-- Real-time ticket validation
-- Prevent duplicate entry
-- Track ticket validation status
-- Support multiple validation methods
-
-### Error Handling
-
-- Global exception handling
-- Consistent API error responses
-- Custom business exceptions
-- Standardized Error DTOs
-
----
-
-# Technology Stack
-
-| Category | Technology |
-|-----------|------------|
-| Language | Java 21 |
-| Framework | Spring Boot |
-| Security | Spring Security, JWT |
-| Database | PostgreSQL |
-| ORM | Spring Data JPA, Hibernate |
-| Object Mapping | MapStruct |
-| Boilerplate Reduction | Lombok |
-| Build Tool | Maven |
-| Containerization | Docker, Docker Compose |
-
----
-
-# Project Architecture
-
-EventHub follows a layered architecture that separates business logic, persistence, and API layers for better maintainability and scalability.
-
-```
-src
-└── main
-    └── java
-        └── com.eventbook.EventHub
-            ├── config
-            ├── controller
-            ├── domain
-            │   ├── dto
-            │   ├── entity
-            │   └── models
-            ├── exceptions
-            ├── filters
-            ├── mappers
-            ├── repositories
-            ├── services
-            └── EventHubApplication.java
+```json
+{
+  "id": "11111111-1111-1111-1111-111111111111",
+  "method": "QR_SCAN"
+}
 ```
 
-### Architecture Layers
+For manual validation, set `method` to `MANUAL` and provide a ticket ID. For QR validation, provide the QR code ID.
 
-- **Controllers** – Expose REST APIs
-- **Services** – Business logic
-- **Repositories** – Database access using Spring Data JPA
-- **Entities** – Database models
-- **DTOs** – Request and response objects
-- **Mappers** – Entity ↔ DTO conversion
-- **Configuration** – Security, JPA, QR Code configuration
-- **Filters** – Request filtering and user provisioning
-- **Exceptions** – Global and custom exception handling
+### Example event creation request
 
----
+```json
+{
+  "name": "Spring Music Festival",
+  "start": "2026-12-05T18:00:00",
+  "end": "2026-12-05T23:30:00",
+  "venue": "City Arena",
+  "salesStart": "2026-10-01T00:00:00",
+  "salesEnd": "2026-12-04T23:59:59",
+  "status": "PUBLISHED",
+  "ticketTypes": [
+    {
+      "name": "General Admission",
+      "price": 999.0,
+      "description": "Standard entry",
+      "totalAvailable": 500
+    },
+    {
+      "name": "VIP",
+      "price": 2499.0,
+      "description": "Priority entry and VIP area access",
+      "totalAvailable": 50
+    }
+  ]
+}
+```
 
-# REST API Modules
+## Authentication and authorization
 
-The application provides REST APIs for:
+Protected routes require this header:
 
-- Authentication
-- User Management
-- Event Management
-- Published Events
-- Ticket Management
-- QR Code Generation
-- Ticket Validation
+```http
+Authorization: Bearer <access-token>
+```
 
----
+- Public published-event endpoints do not require a token.
+- Event creation is restricted to users with the `ORGANIZER` role; organizer ownership is also enforced in the service layer for event operations.
+- Ticket purchase is restricted to users with the `ATTENDEE` role.
+- Other protected endpoints require an authenticated JWT.
 
-# Key Functionalities
+The API is stateless and CORS is configured for local frontend origins on ports `3000`, `5173`, and `5174`.
 
-- JWT Authentication
-- Secure REST APIs
-- QR Code Generation
-- Ticket Validation
-- Draft & Publish Workflow
-- Multiple Ticket Types
-- Inventory Management
-- Custom Exception Handling
-- DTO Mapping
-- Layered Architecture
-- Dockerized Database
-- PostgreSQL Integration
+## Rate limiting
 
----
+Ticket purchases are protected by the `RateLimiterFilter`:
 
-# Getting Started
+- Scope: `POST /api/v1/events/{eventId}/ticket-types/{ticketTypeId}/tickets`
+- Key: authenticated user and request path
+- Limit: 5 requests
+- Window: 60 seconds
+- Response when exceeded: `429 Too Many Requests`
 
-## Prerequisites
+## Error handling
 
-Before running the project, ensure you have installed:
+`GlobalExceptionHandler` maps business and validation failures into a consistent error response. Examples of handled domain errors include:
 
-- Java 21 (or Java 17+)
-- Maven (optional if using Maven Wrapper)
-- Docker
-- Docker Compose
-- Git
+- Event, ticket, ticket type, QR code, and user not found
+- Event update failures and invalid event dates
+- Sold-out ticket types
+- Unauthorized organizer ticket purchase
+- QR code generation failures
 
----
+## Testing
 
-## Clone Repository
+Run the test suite with:
+
+Windows:
+
+```powershell
+.\mvnw.cmd test
+```
+
+macOS / Linux:
 
 ```bash
-git clone https://github.com/AyushRVerma/EventHub.git
-
-cd EventHub
+./mvnw test
 ```
 
----
+The current test suite includes application-context coverage plus event controller and event service tests.
 
-## Start PostgreSQL Database
+## Suggested next steps
 
-```bash
-docker-compose up -d
-```
+- Add a payment gateway and payment-state workflow before completing ticket purchases.
+- Send email confirmations with ticket and QR-code delivery.
+- Add CI/CD, environment profiles, and production secret management.
+- Expand authorization rules for venue staff and validation operations.
+- Add event analytics, cancellation/refund workflows, and seat selection.
+- Add integration tests with PostgreSQL, Redis, and Keycloak containers.
 
----
-
-## Build the Project
-
-### Windows
-
-```cmd
-mvnw.cmd clean install
-```
-
-### Linux/macOS
-
-```bash
-./mvnw clean install
-```
-
----
-
-## Run the Application
-
-### Windows
-
-```cmd
-mvnw.cmd spring-boot:run
-```
-
-### Linux/macOS
-
-```bash
-./mvnw spring-boot:run
-```
-
-The application will start on
-
-```
-http://localhost:8080
-```
-
----
-
-# Database
-
-The application uses PostgreSQL as its primary database.
-
-Database operations are managed using:
-
-- Spring Data JPA
-- Hibernate ORM
-
----
-
-# Security
-
-Security is implemented using:
-
-- Spring Security
-- JWT Authentication
-- Authentication Filters
-- Authorization Rules
-- Stateless Sessions
-
----
-
-# QR Code Workflow
-
-1. User purchases a ticket.
-2. A unique QR code is generated.
-3. QR code is linked with the ticket.
-4. QR code is scanned at the venue.
-5. Ticket validation API verifies authenticity.
-6. Duplicate scans are rejected.
-
----
-
-# Error Handling
-
-A centralized `GlobalExceptionHandler` provides standardized API responses.
-
-Custom exceptions include:
-
-- TicketNotFoundException
-- TicketSoldOutException
-- EventNotFoundException
-- UserNotFoundException
-
-All errors are returned using a consistent `ErrorDto` response format.
-
----
-
-# Future Enhancements
-
-- Email Notifications
-- Payment Gateway Integration
-- Event Analytics Dashboard
-- Seat Selection
-- Redis Caching
-- Swagger/OpenAPI Documentation
-- CI/CD Pipeline
-- Kubernetes Deployment
-
----
-
-# Author
+## Author
 
 **Ayush Raj Verma**
 
-GitHub:
-https://github.com/AyushRVerma
-
-LinkedIn:
-https://www.linkedin.com/in/ayush-raj-verma/
-
+- GitHub: [@AyushRVerma](https://github.com/AyushRVerma)
+- Repository: [AyushRVerma/EventHub](https://github.com/AyushRVerma/EventHub)
