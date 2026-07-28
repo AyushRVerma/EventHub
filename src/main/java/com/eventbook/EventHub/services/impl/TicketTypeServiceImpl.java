@@ -25,6 +25,7 @@ public class TicketTypeServiceImpl implements TicketTypeService {
     private final TicketTypeRepository ticketTypeRepository;
     private final TicketRepository ticketRepository;
     private final QrCodeService qrCodeService;
+    private final EmailService  emailService;
 
     @Override
     @Transactional
@@ -52,7 +53,18 @@ public class TicketTypeServiceImpl implements TicketTypeService {
        Ticket savedTicket= ticketRepository.save(ticket);
        qrCodeService.generateQrCode(savedTicket);
 
-       return ticketRepository.save(savedTicket);
+       Ticket finalTicket =  ticketRepository.save(savedTicket);
 
+        String eventName  = ticketType.getEvent().getName();
+        String venue      = ticketType.getEvent().getVenue();
+        String eventStart = ticketType.getEvent().getStart().toString();
+        String ticketTypeName = ticketType.getName();
+        Double price      = ticketType.getPrice();
+        String ticketId   = finalTicket.getId().toString();
+        String userEmail  = user.getEmail();
+
+       emailService.sendTicketConfirmationEmail(eventName, venue, eventStart, ticketTypeName, price, ticketId, userEmail);
+
+       return finalTicket;
     }
 }
