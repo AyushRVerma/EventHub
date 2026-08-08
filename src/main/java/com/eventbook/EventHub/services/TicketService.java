@@ -12,5 +12,7 @@ public interface TicketService {
 
      Page<Ticket> listTicketForUser(UUID userId, Pageable pageable);
 
-     Optional<Ticket > getTicketForUser(UUID userId , UUID ticketId);
+     Optional<Ticket> getTicketForUser(UUID userId , UUID ticketId);
+
+     com.eventbook.EventHub.domain.DTOs.TicketCancellationResponseDto cancelTicket(UUID userId, UUID ticketId);
 }

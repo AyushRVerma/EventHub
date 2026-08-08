@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name="tickets")
@@ -19,6 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EntityListeners(AuditingEntityListener.class)
 public class Ticket {
 
     @Id
@@ -43,6 +45,12 @@ public class Ticket {
 
     @OneToMany(mappedBy = "ticket",cascade = CascadeType.ALL)
     private List<QrCode> qrCodes=new ArrayList<>();
+
+    @Column(name = "razorpay_order_id")
+    private String razorpayOrderId;
+
+    @Column(name = "razorpay_payment_id")
+    private String razorpayPaymentId;
 
 
     @CreatedDate

@@ -70,4 +70,30 @@ public class TicketController {
        return  ResponseEntity.ok().headers(headers).body(qrCodeImage);
 
     }
+
+    private final com.eventbook.EventHub.services.impl.EmailService emailService;
+
+    @org.springframework.web.bind.annotation.PostMapping("/{ticketId}/cancel")
+    public ResponseEntity<com.eventbook.EventHub.domain.DTOs.TicketCancellationResponseDto> cancelTicket(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID ticketId) {
+
+        UUID userId = parseUserId(jwt);
+        com.eventbook.EventHub.domain.DTOs.TicketCancellationResponseDto response = ticketService.cancelTicket(userId, ticketId);
+        return ResponseEntity.ok(response);
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/send-confirmation-email")
+    public ResponseEntity<String> sendConfirmationEmail(@org.springframework.web.bind.annotation.RequestBody java.util.Map<String, Object> payload) {
+        String eventName = (String) payload.getOrDefault("eventName", "Live Event");
+        String venue = (String) payload.getOrDefault("venue", "Mumbai Arena");
+        String eventStart = (String) payload.getOrDefault("eventStart", "Oct 24, 2026");
+        String ticketTypeName = (String) payload.getOrDefault("ticketTypeName", "General Pass");
+        Double price = Double.valueOf(payload.getOrDefault("price", 1999).toString());
+        String ticketId = (String) payload.getOrDefault("ticketId", "TICK-984210");
+        String recipientEmail = (String) payload.getOrDefault("recipientEmail", "user@example.com");
+
+        emailService.sendTicketConfirmationEmail(eventName, venue, eventStart, ticketTypeName, price, ticketId, recipientEmail);
+        return ResponseEntity.ok("Email dispatched to " + recipientEmail);
+    }
 }

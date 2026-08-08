@@ -4,7 +4,9 @@ import com.eventbook.EventHub.domain.entity.Ticket;
 
 import java.util.UUID;
 
+import com.eventbook.EventHub.domain.DTOs.CreateRazorpayOrderResponseDto;
+
 public interface TicketTypeService {
 
-    Ticket purchaseTicket(UUID userId , UUID ticketTypeId ,UUID eventId);
+    CreateRazorpayOrderResponseDto purchaseTicket(UUID userId , UUID ticketTypeId ,UUID eventId);
 }

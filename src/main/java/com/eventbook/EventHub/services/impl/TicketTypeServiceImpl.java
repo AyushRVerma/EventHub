@@ -18,25 +18,27 @@ import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+import com.eventbook.EventHub.domain.DTOs.CreateRazorpayOrderResponseDto;
+import com.eventbook.EventHub.services.RazorpayService;
+import com.razorpay.Order;
+import com.razorpay.RazorpayException;
+
 @Service
 @RequiredArgsConstructor
 public class TicketTypeServiceImpl implements TicketTypeService {
     private final UserRepository userRepository;
     private final TicketTypeRepository ticketTypeRepository;
     private final TicketRepository ticketRepository;
-    private final QrCodeService qrCodeService;
-    private final EmailService  emailService;
+    private final RazorpayService razorpayService;
 
     @Override
     @Transactional
-    public Ticket purchaseTicket(UUID userId, UUID ticketTypeId, UUID eventId) {
+    public CreateRazorpayOrderResponseDto purchaseTicket(UUID userId, UUID ticketTypeId, UUID eventId) {
        User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(
                String.format("User with id %s not found", userId))
        );
-       TicketType ticketType= ticketTypeRepository.findById(ticketTypeId).orElseThrow(() -> new
+       TicketType ticketType = ticketTypeRepository.findById(ticketTypeId).orElseThrow(() -> new
                TicketTypeNotFoundException(String.format("Ticket type with id %s not found", ticketTypeId)));
-
-
 
        int purchasedTickets = ticketRepository.countByTicketTypeId(ticketType.getId());
        Integer totalAvailable = ticketType.getTotalAvailable();
@@ -45,26 +47,33 @@ public class TicketTypeServiceImpl implements TicketTypeService {
            throw new TicketSoldOutException();
        }
 
+       // Create ticket in PENDING_PAYMENT state (Lock Reservation)
        Ticket ticket = new Ticket();
-       ticket.setStatus(TicketStatusEnum.PURCHASED);
+       ticket.setStatus(TicketStatusEnum.PENDING_PAYMENT);
        ticket.setTicketType(ticketType);
        ticket.setPurchaser(user);
 
-       Ticket savedTicket= ticketRepository.save(ticket);
-       qrCodeService.generateQrCode(savedTicket);
+       Ticket savedTicket = ticketRepository.save(ticket);
 
-       Ticket finalTicket =  ticketRepository.save(savedTicket);
+       try {
+           // Create Razorpay Order
+           Order order = razorpayService.createOrder(savedTicket, ticketType);
+           String orderId = order.get("id");
+           long amount = ((Number) order.get("amount")).longValue();
+           String currency = order.get("currency");
 
-        String eventName  = ticketType.getEvent().getName();
-        String venue      = ticketType.getEvent().getVenue();
-        String eventStart = ticketType.getEvent().getStart().toString();
-        String ticketTypeName = ticketType.getName();
-        Double price      = ticketType.getPrice();
-        String ticketId   = finalTicket.getId().toString();
-        String userEmail  = user.getEmail();
+           savedTicket.setRazorpayOrderId(orderId);
+           ticketRepository.save(savedTicket);
 
-       emailService.sendTicketConfirmationEmail(eventName, venue, eventStart, ticketTypeName, price, ticketId, userEmail);
-
-       return finalTicket;
+           return CreateRazorpayOrderResponseDto.builder()
+                   .ticketId(savedTicket.getId())
+                   .orderId(orderId)
+                   .amount(amount)
+                   .currency(currency)
+                   .keyId(razorpayService.getKeyId())
+                   .build();
+       } catch (RazorpayException e) {
+           throw new RuntimeException("Failed to create Razorpay payment order", e);
+       }
     }
 }

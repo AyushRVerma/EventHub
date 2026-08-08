@@ -148,12 +148,20 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorDto> handleIllegalStateException(IllegalStateException ex) {
+        log.error("Caught IllegalStateException", ex);
+        ErrorDto errorDto = new ErrorDto();
+        errorDto.setError(ex.getMessage());
+        return new ResponseEntity<>(errorDto, HttpStatus.BAD_REQUEST);
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDto> handleException(Exception ex) {
         log.error("Caught handle exception", ex);
         ErrorDto errorDto = new ErrorDto();
-        errorDto.setError("An unknown error occured");
+        errorDto.setError(ex.getMessage() != null ? ex.getMessage() : "An unknown error occured");
 
         return new ResponseEntity<>(errorDto, HttpStatus.INTERNAL_SERVER_ERROR);
     }

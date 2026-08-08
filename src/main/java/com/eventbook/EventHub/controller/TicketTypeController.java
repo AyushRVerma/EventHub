@@ -15,6 +15,8 @@ import java.util.UUID;
 
 import static com.eventbook.EventHub.util.JwtUtil.parseUserId;
 
+import com.eventbook.EventHub.domain.DTOs.CreateRazorpayOrderResponseDto;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/events/{eventId}/ticket-types")
@@ -23,11 +25,12 @@ public class TicketTypeController {
     private final TicketTypeService ticketTypeService;
 
     @PostMapping("/{ticketTypeId}/tickets")
-    public ResponseEntity<Void> purchaseTicket
-            (@AuthenticationPrincipal Jwt jwt,
-             @PathVariable UUID ticketTypeId,
-             @PathVariable UUID eventId){
-        ticketTypeService.purchaseTicket(parseUserId(jwt), ticketTypeId,eventId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT );
+    public ResponseEntity<CreateRazorpayOrderResponseDto> purchaseTicket(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID ticketTypeId,
+            @PathVariable UUID eventId) {
+
+        CreateRazorpayOrderResponseDto responseDto = ticketTypeService.purchaseTicket(parseUserId(jwt), ticketTypeId, eventId);
+        return new ResponseEntity<>(responseDto, HttpStatus.CREATED);
     }
 }

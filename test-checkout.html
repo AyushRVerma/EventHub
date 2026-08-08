@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventHub Razorpay Test Checkout</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f4f6f9; margin: 0; }
+        .card { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        h2 { color: #333; margin-bottom: 0.5rem; }
+        p { color: #666; font-size: 0.95rem; margin-bottom: 1.5rem; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { background: #3399cc; color: white; border: none; padding: 14px 20px; width: 100%; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 10px; }
+        button:hover { background: #2b82ad; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🎟️ EventHub Ticket Checkout</h2>
+        <p>Test Razorpay Payment Modal</p>
+        
+        <input type="text" id="orderId" placeholder="Paste order_id from Step 1 (order_...)">
+        <input type="text" id="keyId" placeholder="Paste your razorpay.key.id (rzp_test_...)">
+        <input type="number" id="amount" placeholder="Amount in paise (e.g. 50000 for ₹500)" value="50000">
+        
+        <button id="pay-btn">Pay Now with Razorpay</button>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        document.getElementById('pay-btn').onclick = function(e) {
+            const orderId = document.getElementById('orderId').value.trim();
+            const keyId = document.getElementById('keyId').value.trim();
+            const amount = document.getElementById('amount').value;
+
+            if (!orderId || !keyId) {
+                alert("Please enter both order_id and keyId!");
+                return;
+            }
+
+            const options = {
+                "key": keyId,
+                "amount": amount,
+                "currency": "INR",
+                "name": "EventHub Ticketing",
+                "description": "Test Event Ticket Purchase",
+                "order_id": orderId,
+                "handler": function (response) {
+                    alert("🎉 Payment Successful!\nPayment ID: " + response.razorpay_payment_id + "\nOrder ID: " + response.razorpay_order_id);
+                },
+                "theme": {
+                    "color": "#3399cc"
+                }
+            };
+            const rzp1 = new Razorpay(options);
+            rzp1.open();
+            e.preventDefault();
+        }
+    </script>
+</body>
+</html>

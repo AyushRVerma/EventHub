@@ -22,8 +22,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(
-            HttpSecurity http, UserProvisioningFilter userProvisioningFilter , JwtAuthenticationConverter jwtAuthenticationConverter , RateLimiterFilter
-             rateLimiterFilter) throws Exception {
+            HttpSecurity http, 
+            UserProvisioningFilter userProvisioningFilter, 
+            JwtAuthenticationConverter jwtAuthenticationConverter, 
+            RateLimiterFilter rateLimiterFilter,
+            OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler) throws Exception {
 
         http
                 .cors(Customizer.withDefaults())
@@ -32,14 +35,21 @@ public class SecurityConfig {
                                 //Catch all rule
                                 authorize
                                         .requestMatchers("/swagger-ui/**" , "/v3/api-docs/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/v1/published-events/**")
-                                        .permitAll()
+                                        .requestMatchers("/api/v1/webhooks/razorpay").permitAll()
+                                        .requestMatchers("/api/v1/auth/register", "/api/v1/config/**", "/api/v1/tickets/send-confirmation-email", "/api/v1/organizer/analytics").permitAll()
+                                        .requestMatchers(HttpMethod.GET, "/api/v1/published-events", "/api/v1/published-events/**").permitAll()
+                                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*/photos", "/api/v1/events/photos/*").permitAll()
                                         .requestMatchers("/api/v1/events").hasRole("ORGANIZER")
+                                        .requestMatchers("/api/v1/organizer/**").hasAnyRole("ORGANIZER", "ADMIN")
+                                        .requestMatchers("/api/v1/ticket-validations/**")
+                                        .hasAnyRole("STAFF", "ORGANIZER", "ADMIN")
                                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/ticket-types/*/tickets").hasRole("ATTENDEE")
                                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2Login(oauth2 ->
+                        oauth2.successHandler(oAuth2AuthenticationSuccessHandler))
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(
 //                                Customizer.withDefaults()
@@ -56,19 +66,17 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Add your frontend URLs here (Vite defaults to 5173/5174, React defaults to 3000)
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:5174",
-                "http://localhost:3000"
-        ));
-
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Allow any localhost origin dynamically (5173, 5174, 5175, etc.)
+        configuration.setAllowedOriginPatterns(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
+        configuration.setExposedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
+    
 }

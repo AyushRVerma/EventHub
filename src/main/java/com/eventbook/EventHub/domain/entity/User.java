@@ -29,6 +29,17 @@ public class User {
      @Column(name="email",nullable = false)
      private String email;
 
+     @Enumerated(EnumType.STRING)
+     @Column(name = "role", columnDefinition = "VARCHAR(255) DEFAULT 'ROLE_ATTENDEE'")
+     private Role role = Role.ROLE_ATTENDEE;
+
+     @Enumerated(EnumType.STRING)
+     @Column(name = "auth_provider")
+     private AuthProvider authProvider = AuthProvider.KEYCLOAK;
+
+     @Column(name = "provider_id")
+     private String providerId;
+
 
      @OneToMany(mappedBy = "organizer" , cascade = CascadeType.ALL)
      private List<Event> organizedEvents=new ArrayList<>();

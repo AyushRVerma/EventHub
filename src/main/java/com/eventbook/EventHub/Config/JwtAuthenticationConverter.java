@@ -26,18 +26,29 @@ public class JwtAuthenticationConverter implements   Converter<Jwt, JwtAuthentic
     }
 
     private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-       Map<String,Object> realmAccess=  jwt.getClaim("realm_access");
+        // 1. Check for custom JWT roles claim
+        if (jwt.hasClaim("roles")) {
+            List<String> roles = jwt.getClaimAsStringList("roles");
+            if (roles != null) {
+                return roles.stream()
+                        .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+            }
+        }
 
-       if(null==realmAccess || !realmAccess.containsKey("roles")) {
-           return Collections.emptyList();
-       }
+        // 2. Check for Keycloak realm_access claim
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (null != realmAccess && realmAccess.containsKey("roles")) {
+            @SuppressWarnings("unchecked")
+            List<String> roles = (List<String>) realmAccess.get("roles");
+            return roles.stream()
+                    .filter(role -> role.startsWith("ROLE_"))
+                    .map(SimpleGrantedAuthority::new)
+                    .collect(Collectors.toList());
+        }
 
-       @SuppressWarnings("unchecked")
-        List<String> roles = (List<String>) realmAccess.get("roles");
-
-       return roles.stream().filter(role -> role.startsWith("ROLE_"))
-               .map(SimpleGrantedAuthority::new)
-               .collect(Collectors.toList());
+        return Collections.emptyList();
     }
 
 

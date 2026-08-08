@@ -1,0 +1,19 @@
+package com.eventbook.EventHub.domain.DTOs;
+
+import com.eventbook.EventHub.domain.entity.TicketStatusEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class TicketCancellationResponseDto {
+    private UUID ticketId;
+    private TicketStatusEnum status;
+    private String message;
+}

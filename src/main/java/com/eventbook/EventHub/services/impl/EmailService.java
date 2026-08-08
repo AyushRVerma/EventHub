@@ -44,6 +44,34 @@ public class EmailService {
         }
     }
 
+    @Async
+    public void sendWaitlistNotificationEmail(String eventName, String ticketTypeName, String recipientEmail) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setTo(recipientEmail);
+            helper.setSubject("🎉 Good News! A Ticket Available for " + eventName);
+            helper.setText("""
+                    <html>
+                    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                        <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px;">
+                            <h1 style="color: #28a745; text-align: center;">🎉 Ticket Available!</h1>
+                            <p>Hi there,</p>
+                            <p>A spot opened up for <strong>%s</strong> (%s)! You were next in line on our waitlist.</p>
+                            <p>Please log in and complete your ticket purchase now before it sells out again!</p>
+                        </div>
+                    </body>
+                    </html>
+                    """.formatted(eventName, ticketTypeName), true);
+
+            mailSender.send(message);
+            log.info("✅ Waitlist notification email sent to: {}", recipientEmail);
+        } catch (MessagingException e) {
+            log.error("❌ Waitlist email failed: {}", e.getMessage());
+        }
+    }
+
     private String buildEmailBody(String eventName, String venue, String eventStart,
                                   String ticketTypeName, Double price, String ticketId) {
         return """
